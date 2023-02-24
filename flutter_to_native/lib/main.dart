@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,6 +50,37 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  static const platform = MethodChannel('flutter.native/helper');
+  static const platformReceiver = MethodChannel('flutter.native/receiver');
+
+  @override
+  void initState() {
+    platformReceiver.setMethodCallHandler(nativeMethodCallHandler);
+    super.initState();
+  }
+
+  Future<dynamic> nativeMethodCallHandler(MethodCall methodCall) async {
+    print("Native Call");
+    switch (methodCall.method) {
+      case "string_method":
+        return "This is a string";
+      case "bool_method":
+        return true;
+      case "int_method":
+        return 5;
+      case "long_method":
+        return 2147483647;
+      case "double_method":
+        return 34.6;
+      case "byte_method":
+        return Uint8List.fromList(<int>[0, 1, 2, 3]);
+      case "list_method":
+        return List.generate(3, (index) => 256 + index);
+      default:
+        //throw PlatformException(code: "joe"); throws error
+        throw MissingPluginException("notImplemented"); //throws not implemented
+    }
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -61,8 +93,24 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<String> fetchHelloWorld() async {
+    String response = "";
+
+    try {
+      final String result = await platform.invokeMethod('helloFromNativeCode');
+      response = result;
+    } on PlatformException catch (e) {
+      response = "Failed to Invoke: '${e.message}'.";
+    }
+
+    print(response);
+    return response;
+  }
+
   @override
   Widget build(BuildContext context) {
+    fetchHelloWorld();
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
